@@ -1,5 +1,7 @@
 // Íconos SVG inline (stroke currentColor) para no depender de librerías pesadas.
-const base = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+// width/height por defecto (20px) para que NO se rendericen gigantes; cualquier
+// llamada puede sobrescribirlos por prop o por CSS.
+const base = { width: 20, height: 20, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
 
 export const IcoTruck = (p) => (
   <svg viewBox="0 0 24 24" {...base} {...p}><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
