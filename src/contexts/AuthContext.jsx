@@ -104,6 +104,11 @@ export function AuthProvider({ children }) {
   async function chequearVerificacion() {
     if (!auth.currentUser) return false
     await reload(auth.currentUser)
+    if (auth.currentUser.emailVerified) {
+      // Forzamos un token nuevo: si no, las reglas de Firestore siguen viendo
+      // email_verified=false y rechazan las escrituras (error al guardar).
+      try { await auth.currentUser.getIdToken(true) } catch (e) { /* reintenta luego */ }
+    }
     setUser({ ...auth.currentUser })
     return auth.currentUser.emailVerified
   }
