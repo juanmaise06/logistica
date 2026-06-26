@@ -1,0 +1,82 @@
+rules_version = '2';
+
+// =============================================================================
+//  Reglas de seguridad de Firestore — App de logística.
+//  Principios:
+//   - Un usuario solo lee/escribe SUS documentos (userId == auth.uid).
+//   - Los viajes (trips) además los puede LEER el admin del equipo (teamId).
+//   - Nadie ve datos de otros equipos.
+//   - Requiere correo verificado para operar.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logueado() {
+      return request.auth != null;
+    }
+    function verificado() {
+      return logueado() && request.auth.token.email_verified == true;
+    }
+    function esPropio(rec) {
+      return logueado() && rec.userId == request.auth.uid;
+    }
+    // ¿El usuario actual es admin del equipo `teamId`?
+    function esAdminDeEquipo(teamId) {
+      return logueado()
+        && teamId != null
+        && exists(/databases/$(database)/documents/teams/$(teamId))
+        && get(/databases/$(database)/documents/teams/$(teamId)).data.adminUid == request.auth.uid;
+    }
+
+    // ---------- users ----------
+    match /users/{uid} {
+      // Cada quien lee/escribe su propio doc.
+      allow read: if logueado() && request.auth.uid == uid;
+      allow create: if logueado() && request.auth.uid == uid;
+      allow update: if logueado() && request.auth.uid == uid;
+      allow delete: if false;
+
+      // El admin puede LEER los docs de usuario que pertenecen a su equipo
+      // (para listar miembros). Se evalúa por separado.
+      allow read: if logueado()
+        && resource.data.teamId != null
+        && esAdminDeEquipo(resource.data.teamId);
+    }
+
+    // ---------- teams ----------
+    match /teams/{teamId} {
+      // Cualquier usuario logueado puede leer equipos (necesario para buscar por
+      // joinCode al unirse y para mostrar el nombre del propio equipo).
+      allow read: if logueado();
+      // Crear: el creador queda como admin.
+      allow create: if verificado() && request.resource.data.adminUid == request.auth.uid;
+      // Modificar/eliminar: solo el admin.
+      allow update, delete: if logueado() && resource.data.adminUid == request.auth.uid;
+    }
+
+    // ---------- vehicles / fuelTypes / places ----------
+    match /vehicles/{id} {
+      allow read, update, delete: if esPropio(resource.data);
+      allow create: if verificado() && esPropio(request.resource.data);
+    }
+    match /fuelTypes/{id} {
+      allow read, update, delete: if esPropio(resource.data);
+      allow create: if verificado() && esPropio(request.resource.data);
+    }
+    match /places/{id} {
+      allow read, update, delete: if esPropio(resource.data);
+      allow create: if verificado() && esPropio(request.resource.data);
+    }
+
+    // ---------- trips ----------
+    match /trips/{id} {
+      // Lee el dueño, o el admin del equipo del viaje.
+      allow read: if esPropio(resource.data)
+        || esAdminDeEquipo(resource.data.teamId);
+      // Crea/edita/borra SOLO el dueño (el admin es de solo lectura).
+      allow create: if verificado() && esPropio(request.resource.data);
+      allow update, delete: if esPropio(resource.data);
+    }
+  }
+}
