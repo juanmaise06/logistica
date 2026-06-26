@@ -28,8 +28,8 @@ async function fetchJson(url, opciones) {
   } catch (e) {
     throw new TomTomError('Sin conexión con el servicio de mapas. Revisá tu internet.', 0)
   }
-  if (resp.status === 403) {
-    throw new TomTomError('La clave de TomTom es inválida o no está autorizada para este dominio.', 403)
+  if (resp.status === 401 || resp.status === 403) {
+    throw new TomTomError('TomTom rechazó la solicitud: revisá que la API key esté activa, tenga habilitado Search/Routing y que la restricción de dominio incluya juanmaise06.github.io.', resp.status)
   }
   if (resp.status === 429) {
     throw new TomTomError('Se alcanzó el límite de uso de TomTom por hoy. Probá más tarde.', 429)
