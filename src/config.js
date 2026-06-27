@@ -6,7 +6,7 @@
 
 // --- TomTom ---
 // Restringir esta key al dominio: https://juanmaise06.github.io/logistica/
-export const TOMTOM_API_KEY = '2VQqpG6nGTybHPTNRr08IcWhpnX2ezhr'
+export const TOMTOM_API_KEY = 'vZ2skFD58JD5vokAsnmb0Qlk0aV57J5U'
 
 // --- Firebase (config web del proyecto) ---
 export const firebaseConfig = {
