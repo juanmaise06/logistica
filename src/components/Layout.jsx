@@ -28,7 +28,7 @@ export default function Layout({ children, online }) {
 
       {!online && (
         <div className="offline-bar">
-          Sin conexión: el tráfico en vivo y los mapas pueden no actualizarse.
+          Sin conexión: la búsqueda de direcciones y el mapa necesitan internet.
         </div>
       )}
 

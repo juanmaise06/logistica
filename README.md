@@ -1,20 +1,21 @@
 # Logística — Evaluador de eficiencia de viajes (PWA)
 
-App instalable (PWA) para que un transportista decida **a qué proveedor/localidad le conviene ir a buscar mercadería**, comparando escenarios por **tiempo con tráfico, combustible ($ y litros), distancia y cortes/incidentes**. Incluye registro de viajes, historial mensual, dashboard de consumo y export a Excel. Equipos con admin/miembro.
+App instalable (PWA) para que un transportista decida **a qué proveedor/localidad le conviene ir a buscar mercadería**, comparando escenarios por **tiempo estimado, combustible ($ y litros) y distancia**. Incluye registro de viajes, historial mensual, dashboard de consumo y export a Excel. Equipos con admin/miembro.
 
-Stack: **React + Vite**, **Firebase** (Auth + Firestore), **TomTom Maps APIs**, **SheetJS** (xlsx), service worker vía `vite-plugin-pwa`. Pensada para desplegar en **GitHub Pages** (estático, sin backend).
+Stack: **React + Vite**, **Firebase** (Auth + Firestore), **OpenStreetMap** (Nominatim para búsqueda, OSRM para ruteo/optimización, Leaflet + CARTO para el mapa — sin API key ni tarjeta), **SheetJS** (xlsx), service worker vía `vite-plugin-pwa`. Pensada para desplegar en **GitHub Pages** (estático, sin backend).
+
+> Nota: al usar OpenStreetMap el tiempo de viaje es **estimado** (sin tráfico en vivo) y no hay datos de cortes/incidentes. La búsqueda de direcciones, las rutas, la distancia, el combustible y la optimización de paradas funcionan completos.
 
 ---
 
 ## 1. Dónde van las claves
 
-Todas las claves de cliente están en **`src/config.js`** (son públicas por diseño; se protegen por restricción de dominio + reglas de Firestore):
+La config de cliente está en **`src/config.js`**:
 
-- `TOMTOM_API_KEY` — tu API key de TomTom.
-- `firebaseConfig` — la config web de tu proyecto Firebase.
+- `firebaseConfig` — la config web de tu proyecto Firebase (pública por diseño).
+- Los mapas (OpenStreetMap) **no requieren clave**.
 
 > **Importante (seguridad real):**
-> - En el panel de **TomTom**, restringí la key al dominio `https://juanmaise06.github.io` (HTTP Referer).
 > - En **Firebase Console → Authentication → Settings → Dominios autorizados**, agregá `juanmaise06.github.io`.
 > - En **Firestore → Reglas**, pegá el contenido de [`firestore.rules`](./firestore.rules) y publicá. Eso impide que un usuario lea datos de otro del lado del servidor.
 
@@ -58,12 +59,13 @@ Opción con GitHub Actions: agregá un workflow que corra `npm ci && npm run bui
 
 ---
 
-## 5. Uso de TomTom y free tier
+## 5. Uso de OpenStreetMap (buenas prácticas)
 
-- Geocoding con **debounce** (no se llama en cada tecla) y solo se guardan las coordenadas de los lugares que elegís.
-- Las rutas/incidentes se calculan **al tocar "Calcular y comparar"**, no en cada cambio.
-- Optimización de orden: límite **12 waypoints** (origen + destinos + vuelta). Si te pasás, la app avisa.
-- Tiles de mapa cacheados por el service worker.
+- Búsqueda (Nominatim) con **debounce** (~650 ms, no se llama en cada tecla) para respetar el límite de ~1 req/seg; solo se guardan las coordenadas de los lugares que elegís.
+- Las rutas se calculan **al tocar "Calcular y comparar"**, no en cada cambio.
+- Optimización de orden (OSRM): límite de **12 puntos**. Si te pasás, la app avisa.
+- Tiles de mapa (CARTO) cacheados por el service worker.
+- El ruteo usa el servidor de demostración público de OSRM (`router.project-osrm.org`), pensado para uso liviano. Para volumen alto conviene un OSRM propio u OpenRouteService (clave gratuita, sin tarjeta).
 
 ---
 
@@ -71,7 +73,7 @@ Opción con GitHub Actions: agregá un workflow que corra `npm ci && npm run bui
 
 - **Android/iOS:** abrir la URL en Chrome/Safari → "Agregar a pantalla de inicio".
 - **PC (Chrome/Edge):** ícono de instalar en la barra de direcciones.
-- El shell se cachea para abrir rápido y offline; el **tráfico en vivo requiere conexión** (la app lo avisa).
+- El shell se cachea para abrir rápido y offline; la **búsqueda de direcciones y el mapa requieren conexión** (la app lo avisa).
 
 ---
 
@@ -93,12 +95,12 @@ Si el modelo tipeado no coincide, se usa el **consumo típico de la categoría**
 
 ```
 src/
-  config.js              claves (TomTom + Firebase)
+  config.js              config (Firebase) y constantes de mapa
   firebase.js            init de Firebase
   contexts/AuthContext   auth, verificación, perfil, equipo
   hooks/useColeccion     carga de colecciones del usuario
   services/
-    tomtom.js            geocoding, ruteo c/tráfico, optimización, incidentes
+    mapas.js             búsqueda (Nominatim), ruteo y optimización (OSRM)
     calculo.js           costos por escenario + recomendación
     consumoVehiculos.js  tabla interna de consumo (ampliable)
     firestore.js         CRUD + equipos + viajes

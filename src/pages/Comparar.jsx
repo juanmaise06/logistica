@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useColeccion } from '../hooks/useColeccion'
 import { Alerta, Spinner, Vacio, Modal } from '../components/ui'
-import { IcoCompare, IcoPlus, IcoTrash, IcoX, IcoOptim, IcoStar, IcoRoute, IcoCheck, IcoWarn } from '../components/Icons'
+import { IcoCompare, IcoPlus, IcoTrash, IcoX, IcoOptim, IcoStar, IcoRoute, IcoCheck } from '../components/Icons'
 import SelectorLugar from '../components/SelectorLugar'
-import MapaTomTom from '../components/MapaTomTom'
-import { calcularRuta, optimizarOrden, incidentesEnZona, bboxDePuntos } from '../services/tomtom'
+import MapaOSM from '../components/MapaOSM'
+import { calcularRuta, optimizarOrden } from '../services/mapas'
 import { calcularEscenario, recomendar } from '../services/calculo'
 import { crearViaje, fechaATimestamp } from '../services/firestore'
 import { pesos, km, minutos, litros, num, fechaInput } from '../services/formato'
@@ -61,12 +61,7 @@ export default function Comparar() {
       const res = []
       for (const esc of validos) {
         const ptsRuta = puntosDe(esc)
-        const ruta = await calcularRuta(ptsRuta, { traffic: true })
-        // Incidentes en la zona del recorrido (no crítico si falla).
-        let incidentes = []
-        try {
-          incidentes = await incidentesEnZona(bboxDePuntos(ptsRuta))
-        } catch (e) { incidentes = [] }
+        const ruta = await calcularRuta(ptsRuta)
         const calc = calcularEscenario(ruta, {
           idaYVuelta: esc.idaYVuelta,
           consumoL100: vehiculo.consumoL100,
@@ -79,14 +74,13 @@ export default function Comparar() {
           esc,
           ruta,
           calc,
-          incidentes,
           geometria: ruta.geometria,
           // Marcadores: origen + destinos (sin repetir el de vuelta)
           puntos: [esc.origen, ...esc.destinos]
         })
       }
       setResultados(res)
-      setRecomendacion(recomendar(res.map((r) => ({ nombre: r.nombre, calc: r.calc, incidentes: r.incidentes, escUid: r.escUid }))))
+      setRecomendacion(recomendar(res.map((r) => ({ nombre: r.nombre, calc: r.calc, incidentes: [], escUid: r.escUid }))))
     } catch (e) {
       setError(e.message || 'No se pudo calcular.')
     } finally {
@@ -94,9 +88,8 @@ export default function Comparar() {
     }
   }
 
-  // Datos para el mapa: todas las rutas + todos los incidentes.
+  // Datos para el mapa: todas las rutas.
   const rutasMapa = (resultados || []).map((r) => ({ nombre: r.nombre, geometria: r.geometria, puntos: r.puntos }))
-  const incidentesMapa = (resultados || []).flatMap((r) => r.incidentes)
 
   if (cargVeh) return <div className="card"><Spinner /> Cargando…</div>
 
@@ -182,20 +175,6 @@ export default function Comparar() {
                       <div className="lbl">Costo total</div><div className="val">{pesos(r.calc.costoTotal)}</div>
                     </div>
                   </div>
-                  {r.calc.demoraTraficoMin > 1 && (
-                    <div className="hint" style={{ color: 'var(--warn)' }}>Incluye ~{Math.round(r.calc.demoraTraficoMin)} min de demora por tráfico.</div>
-                  )}
-                  {r.incidentes.length > 0 && (
-                    <div className="incidentes-list">
-                      <strong style={{ fontSize: '0.85rem' }}>⚠ Incidentes en la zona ({r.incidentes.length}):</strong>
-                      {r.incidentes.slice(0, 4).map((inc, i) => (
-                        <div className="incidente" key={i}>
-                          <span className="ic"><IcoWarn style={{ width: 16, height: 16 }} /></span>
-                          <span>{inc.tipo}: {inc.descripcion}{inc.retrasoMin ? ` (~${inc.retrasoMin} min)` : ''}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                   <button className="btn exito mt" onClick={() => setRegistrar(r)}>
                     <IcoCheck /> Registrar este viaje
                   </button>
@@ -205,9 +184,9 @@ export default function Comparar() {
           </div>
 
           <div className="card">
-            <h2>Mapa · tráfico en vivo e incidentes</h2>
-            <p className="sub">Las rutas se muestran en distintos colores. La capa de tráfico y los cortes requieren conexión.</p>
-            <MapaTomTom rutas={rutasMapa} incidentes={incidentesMapa} />
+            <h2>Mapa del recorrido</h2>
+            <p className="sub">Las rutas de cada opción se muestran en distintos colores. El tiempo es estimado (sin tráfico en vivo).</p>
+            <MapaOSM rutas={rutasMapa} />
           </div>
         </>
       )}

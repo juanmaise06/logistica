@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { buscarDireccion } from '../services/tomtom'
+import { buscarDireccion } from '../services/mapas'
 import { Spinner } from './ui'
 
-// Input con autocompletado de TomTom + debounce para no agotar el free tier.
+// Input con autocompletado de direcciones (Nominatim/OSM) + debounce.
 // onSeleccion({ nombre, direccion, lat, lng })
 export default function AutocompleteDireccion({ onSeleccion, placeholder = 'Escribí una dirección o localidad…', valorInicial = '' }) {
   const [texto, setTexto] = useState(valorInicial)
@@ -30,7 +30,8 @@ export default function AutocompleteDireccion({ onSeleccion, placeholder = 'Escr
       setSugerencias([]); setAbierto(false)
       return
     }
-    // Debounce de 450ms: no llamamos a TomTom en cada tecla.
+    // Debounce de 650ms: respeta el límite de Nominatim (~1 req/seg) y no
+    // dispara una búsqueda en cada tecla.
     debounceRef.current = setTimeout(async () => {
       setBuscando(true)
       try {
@@ -43,7 +44,7 @@ export default function AutocompleteDireccion({ onSeleccion, placeholder = 'Escr
       } finally {
         setBuscando(false)
       }
-    }, 450)
+    }, 650)
   }
 
   function elegir(s) {

@@ -1,12 +1,8 @@
 // =============================================================================
-//  Claves de cliente (públicas por diseño).
-//  Se protegen con RESTRICCIÓN POR DOMINIO (en el panel de TomTom y Firebase)
-//  + reglas de seguridad de Firestore. No se "ocultan".
+//  Configuración de cliente.
+//  Mapas: OpenStreetMap (Nominatim + OSRM) — sin API key, sin tarjeta.
+//  Firebase: config web pública por diseño, protegida por reglas de Firestore.
 // =============================================================================
-
-// --- TomTom ---
-// Restringir esta key al dominio: https://juanmaise06.github.io/logistica/
-export const TOMTOM_API_KEY = 'vZ2skFD58JD5vokAsnmb0Qlk0aV57J5U'
 
 // --- Firebase (config web del proyecto) ---
 export const firebaseConfig = {

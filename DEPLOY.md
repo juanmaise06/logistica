@@ -39,12 +39,12 @@ Marcá cada paso. Los comandos van en una terminal **PowerShell** dentro de la c
 5. **Firestore → Reglas**: borrá lo que haya y pegá TODO el contenido del archivo
    [`firestore.rules`](./firestore.rules). Tocá **Publicar**.
 
-## 4. Restringir la API key de TomTom
+## 4. Mapas (no requiere configuración)
 
-1. https://developer.tomtom.com → tu Dashboard → la API key.
-2. Activá la restricción por **HTTP Referer** y agregá: `https://juanmaise06.github.io/*`
-3. Asegurate de que estén habilitadas: **Search, Routing, Waypoint Optimization,
-   Traffic (Flow + Incidents) y Maps (Raster/Vector)**.
+La app usa **OpenStreetMap** para la búsqueda de direcciones (Nominatim), el
+ruteo y la optimización de paradas (OSRM), y los mapas (Leaflet + CARTO).
+**No hace falta API key ni tarjeta.** El tiempo de viaje es estimado (sin
+tráfico en vivo).
 
 ## 5. Probar (criterios de aceptación)
 
@@ -54,7 +54,7 @@ Abrí la app y verificá:
 - [ ] Crear vehículo: modelo+año sugiere consumo, lo editás y guarda.
 - [ ] Crear combustibles con precio y asignarlos al vehículo.
 - [ ] Guardar lugares y reusarlos en un recorrido.
-- [ ] Armar 2 escenarios (A vs B), ida/vuelta, optimizar orden, ver mapa con tráfico y cortes.
+- [ ] Armar 2 escenarios (A vs B), ida/vuelta, optimizar orden, ver el mapa con las rutas.
 - [ ] Ver tiempo/km/litros/$ por separado + recomendación en una frase.
 - [ ] Registrar el viaje hecho → aparece en Historial.
 - [ ] Dashboard con totales del día y de un rango.

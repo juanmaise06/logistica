@@ -11,10 +11,10 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Separamos las libs pesadas para mejorar el cacheo entre deploys.
-          tomtom: ['@tomtom-international/web-sdk-maps', '@tomtom-international/web-sdk-services'],
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
           charts: ['recharts'],
-          excel: ['xlsx']
+          excel: ['xlsx'],
+          leaflet: ['leaflet']
         }
       }
     }
@@ -47,11 +47,11 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
-            // Tiles de mapa: cache-first con expiración (el tráfico en vivo igual requiere red).
-            urlPattern: /^https:\/\/.*\.api\.tomtom\.com\/map\//,
+            // Tiles de mapa (OSM/CARTO): cache-first con expiración.
+            urlPattern: /^https:\/\/.*\.basemaps\.cartocdn\.com\//,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'tomtom-tiles',
+              cacheName: 'osm-tiles',
               expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 7 }
             }
           }
